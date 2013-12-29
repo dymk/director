@@ -1,3 +1,4 @@
+.dub
 *.obj
 *.o
 *.exe

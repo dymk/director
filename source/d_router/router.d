@@ -1,6 +1,6 @@
 module d_router.router;
 
-import
+private import
 	std.stdio,
 	std.array,
 	std.regex,
@@ -9,16 +9,17 @@ import
 	std.typetuple,
 	std.typetuple;
 
-import
+private import
 	d_router.route,
 	d_router.regex_route,
 	d_router.splitter_route,
-	d_router.part;
+	d_router.part,
+	d_router.params;
 
 private
 {
-	alias CB_Delegate_Params = void delegate(string[string]);
-	alias CB_Function_Params = void function(string[string]);
+	alias CB_Delegate_Params = void delegate(Params);
+	alias CB_Function_Params = void function(Params);
 	alias CB_Delegate        = void delegate();
 	alias CB_Function        = void function();
 
@@ -193,14 +194,14 @@ public:
 				if(pair.is_delegate)
 				{
 					if(pair.takes_params)
-						pair.dp_callback(matched_params);
+						pair.dp_callback(Params(matched_params));
 					else
 						pair.d_callback();
 				}
 				else
 				{
 					if(pair.takes_params)
-						pair.fp_callback(matched_params);
+						pair.fp_callback(Params(matched_params));
 					else
 						pair.f_callback();
 				}

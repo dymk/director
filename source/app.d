@@ -29,7 +29,7 @@ void main()
 	 * string[string] containing the params hash
 	 */
 	router.get("/job/:name/:occupation", (params) {
-		writefln("%s is a %s", params["name"], params["occupation"]);
+		writefln("%s is a %s", params.name, params.occupation);
 	});
 
 	/**
@@ -38,14 +38,13 @@ void main()
 	 */
 	router.get("/user/:name?", (params) {
 
-		auto name = "name" in params;
-		if(name is null)
+		if(params.has("name"))
 		{
 			writeln("You didn't supply a name!");
 		}
 		else
 		{
-			writeln("Hello, ", *name);
+			writeln("Hello, ", params.name);
 		}
 
 	});
@@ -79,7 +78,7 @@ void main()
 	.get("/chained/a", () { writeln("Matched a"); })
 	.get("/chained/b", () { writeln("Matched b"); })
 	.get("/chained/:o", (params) {
-		writeln("Matched other: ", params["o"]);
+		writeln("Matched other: ", params.o);
 	});
 
 	bench();
@@ -101,15 +100,15 @@ void bench()
 	// Benchmark for Splitter vs Regex based route matchers
 	import std.datetime;
 
-	static void nil(string[string] params) {}
+	static void noop() {}
 
 	Router r1 = Router();
 	Router r2 = Router();
 
 	foreach(pattern; ["/foo", "/:name", "/foo/:bar/:baz"])
 	{
-		r1.get(new SplitterRoute(pattern), &nil);
-		r2.get(new RegexRoute(pattern), &nil);
+		r1.get(new SplitterRoute(pattern), &noop);
+		r2.get(new RegexRoute(pattern), &noop);
 	}
 
 	void doMatch(ref Router r)

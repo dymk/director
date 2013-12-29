@@ -14,23 +14,20 @@ by the d-router library. Pushing routes onto the router is done
 through the `Router#push(string, callback)` method, where `callback` can be one of four types:
 
  - `void function()`
- - `void function(string[string] params)`
+ - `void function(Params)`
  - `void delegate()`
- - `void delegate(string[string] params)`
+ - `void delegate(Params)`
 
-where `string[string]` is a hash of parameters matched in the route.
+where `Params` is a hash of parameters matched in the route.
 
 Routes can contain variables, denoted by beginning with a `:`, that
-are then passed to the handler if it accepts a string[string] argument.
-
+are then passed to the handler if it accepts a Params argument.
 For instance, the route `/users/:name` will match `/users/dymk`, and
-pass the handler the hash `["name": "dymk"]`.
+pass the handler a Params object containing `["name": "dymk"]`.
 
-Optional variables are also supported, by appending a '?' to the end
-of the variable name.
-
-For instance, the route `/users/:name?` will match both `/users` and `/users/dymk`,
-passing an empty hash to the handler in the first case.
+Optional variables are also supported, by appending a `?` to the end
+of the variable name. For instance, the route `/users/:name?` will match both
+`/users` and `/users/dymk`, passing an empty hash to the handler in the first case.
 
 Defining Routes
 ---------------
@@ -51,7 +48,7 @@ void main()
 	/**
 	 * Passing functions as handlers
 	 */
-	router.push("/foo/bar", {
+	router.get("/foo/bar", {
 		writeln("/foo/bar was called");
 	});
 
@@ -59,24 +56,23 @@ void main()
 	 * Passing functions as handlers, which take a
 	 * string[string] containing the params hash
 	 */
-	router.push("/job/:name/:occupation", (params) {
-		writefln("%s is a %s", params["name"], params["occupation"]);
+	router.get("/job/:name/:occupation", (params) {
+		writefln("%s is a %s", params.name, params.occupation);
 	});
 
 	/**
 	 * Optional route parts
 	 * This will match on /user, or /user/bob
 	 */
-	router.push("/user/:name?", (params) {
+	router.get("/user/:name?", (params) {
 
-		auto name = "name" in params;
-		if(name is null)
+		if(params.has("name"))
 		{
 			writeln("You didn't supply a name!");
 		}
 		else
 		{
-			writeln("Hello, ", *name);
+			writeln("Hello, ", params.name);
 		}
 
 	});
@@ -85,7 +81,7 @@ void main()
 	 * Delegate support
 	 */
 	int i = 0;
-	router.push("/callme", {
+	router.get("/callme", {
 
 		i++;
 		writefln("Been called %d times", i);
@@ -96,7 +92,7 @@ void main()
 	 * Delegate with param support
 	 */
 	string[] seen_names;
-	router.push("/addname/:name", (params) {
+	router.get("/addname/:name", (params) {
 
 		seen_names ~= params["name"];
 		writeln("Seen names: ", seen_names);
@@ -106,13 +102,12 @@ void main()
 	/**
 	 * Push method chaining
 	 */
-	 router
-	 .push("/chained/a", () { writeln("Matched a"); })
-	 .push("/chained/b", () { writeln("Matched b"); })
-	 .push("/chained/:o", (params) {
-	 	writeln("Matched other: ", params["o"]);
-	 });
-
+	router
+	.get("/chained/a", () { writeln("Matched a"); })
+	.get("/chained/b", () { writeln("Matched b"); })
+	.get("/chained/:o", (params) {
+		writeln("Matched other: ", params.o);
+	});
 ```
 
 
@@ -128,13 +123,50 @@ void main()
 	auto router = Router();
 
 	router.push("/users/:name", (params) {
-		writeln("Hello, ", params["name"]);
+		writeln("Hello, ", params.name);
 	});
 
 	router.match("/foo/Dave"); // Prints `Hello, Dave` to stdout
 
 	assert(router.match("/foo/bar") == true);
 	assert(rotuer.match("/baz") == false);
+}
+```
+
+The Params Object
+-----------------
+
+Params responds to `opDispatch`, and makes accessing variables matched
+in the route easy.
+
+ - `bool Params#has(string name)`: Returns true if `name` is in the params hash
+ - `in` operator: Returns a pointer to the value in params (identical to `string in string[string]` )
+ - `opDispatch(string name)()`: Returns the parameter variable for a given name, or raises if it's not found.
+ - `opIndex(string name)`: Identical to `string[string]`'s `opIndex`; returns the parameter for that name.
+
+```d
+void main()
+{
+	auto r = Router();
+
+	r.push("/:first/:opt", (params) {
+
+		if(params.has("opt"))
+		{
+			writeln("First was: ", params.first);
+			writeln("Opt was: ", params.opt);
+		}
+		else
+		{
+			writeln("First was: ", params["first"]);
+		}
+
+		// 'in' operator
+		if("opt" in params)
+		{
+			writeln("Opt in params");
+		}
+	});
 }
 ```
 
@@ -147,6 +179,5 @@ the `Route` interface. `SplitterRoute` is approximatly twice as fast
 for matching for all tests than `RegexRoute`, but it cannot handle
 optional parameters.
 
-`Router` will automatically determine which `Route` implementation
-to use, prefering the `SplitterRoute` if the pattern contains no
-optional parameters.
+`Router` will determine which `Route` implementation to use, prefering
+`SplitterRoute` if the route contains no optional parameters.
