@@ -4,17 +4,21 @@ d-router
 d-router is a fast routing library for D, modeled after the routing
 semantics of Sinatra and Ruby on Rails.
 
+`dub --build=unittest` to unittest
+
 Routing
 -------
 
-`Router` is the main type exposed by the d-router library. Pushing
-routes onto the router is done through the `Router#push` method, which
-takes four types:
+`Router`, from the `d_router.router` module, is the main type exposed
+by the d-router library. Pushing routes onto the router is done
+through the `Router#push(string, callback)` method, where `callback` can be one of four types:
 
- - A function
- - A function that takes a string[string] argument
- - A delegate
- - A delegate that takes a string[string] argument
+ - `void function()`
+ - `void function(string[string] params)`
+ - `void delegate()`
+ - `void delegate(string[string] params)`
+
+where `string[string]` is a hash of parameters matched in the route.
 
 Routes can contain variables, denoted by beginning with a `:`, that
 are then passed to the handler if it accepts a string[string] argument.
@@ -31,7 +35,7 @@ passing an empty hash to the handler in the first case.
 Defining Routes
 ---------------
 
-`Route#push` pushes a new route to match on. The method takes a
+`Route#push(string, callback)` pushes a new route to match on. The method takes a
 string route pattern, and a callback to invoke when matched. The
 method can be chained.
 
@@ -116,9 +120,9 @@ Matching
 --------
 
 Matching on routes is simple, and accessed through the `Route#match`
-method. `Route#match` returns `true` if a match was found; else, `false`:
+method. `Route#match(string)` returns `true` if a match was found; else, `false`:
 
-```
+```d
 void main()
 {
 	auto router = Router();
@@ -137,10 +141,10 @@ void main()
 Notes
 -----
 
-There are two "engines" for determining if a route matches or not:
+There are two implementations for determining if a route matches or not:
 a `SplitterRoute`, and a `RegexRoute` class, both of which implement
 the `Route` interface. `SplitterRoute` is approximatly twice as fast
-for matching for all tests than RegexRoute, but it cannot handle
+for matching for all tests than `RegexRoute`, but it cannot handle
 optional parameters.
 
 `Router` will automatically determine which `Route` implementation
