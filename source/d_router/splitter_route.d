@@ -1,4 +1,4 @@
-module splitter_route;
+module d_router.splitter_route;
 
 import
 	std.regex,
@@ -6,7 +6,9 @@ import
 	std.algorithm,
 	std.stdio;
 
-import part, route;
+import
+	d_router.part,
+	d_router.route;
 
 final class SplitterRoute : Route
 {
@@ -21,22 +23,20 @@ private:
 public:
 	this(string pattern)
 	{
+		assert(!Part.hasOptionalPart(pattern),
+			"SplitterRoute doens't support optional parts; use RegexRoute");
+
 		debug this._pattern = pattern;
-		parts = pattern.splitter("/");
+		parts = pattern.normalize.splitter("/");
 	}
 
 	bool matches(string pattern, out string[string] matched_params)
 	{
-		// Trim off the trailing slash
-		if(pattern.length > 1 && pattern[$-1] == '/')
-		{
-			pattern = pattern[0..$-1];
-		}
-
-		auto pattern_parts = pattern.splitter("/");
+		auto pattern_parts = pattern.normalize.splitter("/");
 		auto this_parts = parts.save;
 
-		version(none) debug
+		version(none)
+		debug
 		{
 			writeln("Testing pattern: ", pattern);
 			writeln("Pattern parts: ", pattern_parts);
@@ -54,7 +54,6 @@ public:
 
 			// The part of this route that is currently being compared on
 			auto tpart = Part(this_parts.front);
-			assert(!tpart.optional, "SplitterRoute doens't support optional parts; use RegexRoute");
 
 			if(tpart.parameter)
 			{
@@ -113,4 +112,23 @@ unittest
 
 	assert(r.matches("/foo/", params));
 	assert(params["p"] == "foo");
+}
+
+unittest
+{
+	auto r = new SplitterRoute("/first/:var1/:var2/last");
+	string[string] params;
+
+	assert(r.matches("/first/foo/bar/last", params));
+	assert(params["var1"] == "foo");
+	assert(params["var2"] == "bar");
+
+	assert(r.matches("/first/foo/bar/last/", params));
+	assert(params["var1"] == "foo");
+	assert(params["var2"] == "bar");
+
+	assert(!r.matches("/first/foo/last", params));
+	assert(!r.matches("/first/foo/bar/last/whut", params));
+
+	assert(!r.matches("/first/foo//bar/last", params));
 }

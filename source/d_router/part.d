@@ -1,4 +1,4 @@
-module part;
+module d_router.part;
 
 import std.algorithm;
 
