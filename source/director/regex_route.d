@@ -18,7 +18,7 @@ final class RegexRoute : Route
 
 private:
 	Regex!char r;
-	typeof(r.namedCaptures) nc;
+	typeof((Regex!char).init.namedCaptures) nc;
 
 public:
 	this(string pattern)

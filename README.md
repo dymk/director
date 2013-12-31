@@ -4,7 +4,9 @@ Director
 `director` is a fast routing library for D, modeled after the routing
 semantics of Sinatra and Ruby on Rails.
 
-`dub --build=unittest` to unittest
+`dub --build=unittest` to unittest.
+
+DMD 2.064 and LDC on the `merge-2.064` branch are supported.
 
 Routing
 -------

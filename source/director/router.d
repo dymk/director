@@ -54,9 +54,12 @@ public:
 		CB_Delegate_Params);
 private:
 
-	enum isCallback(T) =
-		is(T == CB_Function) || is(T == CB_Function_Params) ||
-		is(T == CB_Delegate) || is(T == CB_Delegate_Params);
+	template isCallback(T)
+	{
+		enum isCallback =
+			is(T == CB_Function) || is(T == CB_Function_Params) ||
+			is(T == CB_Delegate) || is(T == CB_Delegate_Params);
+	}
 
 	struct RouteCallbackPair
 	{
@@ -127,7 +130,9 @@ private:
 	Route routeFor(string route_pattern)
 	{
 		if(Part.hasOptionalPart(route_pattern))
+		{
 			return new RegexRoute(route_pattern);
+		}
 		else
 			return new SplitterRoute(route_pattern);
 	}
@@ -219,12 +224,25 @@ public:
 		return this;
 	}
 
-	bool match(E)(string pattern, Method method, E extra)
+	bool match(string pattern, Method method)
 	{
-		return match(pattern, method, Variant(extra));
+		return match(pattern, method, Variant());
 	}
 
-	bool match(string pattern, Method method, Variant extra = null)
+	bool match(E)(string pattern, Method method, E extra)
+	{
+		static if(is(E == Variant))
+		{
+			return matchImpl(pattern, method, extra);
+		}
+		else
+		{
+			return match(pattern, method, Variant(extra));
+		}
+	}
+
+private:
+	bool matchImpl(string pattern, Method method, Variant extra)
 	{
 		string[string] matched_params;
 
@@ -251,6 +269,7 @@ public:
 		}
 
 		return false;
+
 	}
 }
 
