@@ -1,4 +1,4 @@
-module d_router.splitter_route;
+module director.splitter_route;
 
 import
 	std.regex,
@@ -7,13 +7,13 @@ import
 	std.stdio;
 
 import
-	d_router.part,
-	d_router.route;
+	director.part,
+	director.route;
 
 final class SplitterRoute : Route
 {
 	debug string _pattern;
-	string pattern() @property { return _pattern; }
+	debug string pattern() @property { return _pattern; }
 
 private:
 	// The type returned by a splitter operating on strings

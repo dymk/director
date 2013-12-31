@@ -1,4 +1,4 @@
-module d_router.route;
+module director.route;
 
 interface Route
 {

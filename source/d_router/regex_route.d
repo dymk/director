@@ -1,4 +1,4 @@
-module d_router.regex_route;
+module director.regex_route;
 
 import
 	std.string,
@@ -8,13 +8,13 @@ import
 	std.stdio;
 
 import
-	d_router.part,
-	d_router.route;
+	director.part,
+	director.route;
 
 final class RegexRoute : Route
 {
 	debug string _pattern;
-	string pattern() @property { return _pattern; }
+	debug string pattern() @property { return _pattern; }
 
 private:
 	Regex!char r;

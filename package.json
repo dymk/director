@@ -1,11 +1,9 @@
 {
-	"name": "d_router",
+	"name": "director",
 	"description": "A blazing fast, sinatra-esque router implementation, written in D",
 	"homepage": "https://github.com/dymk",
 	"copyright": "Copyright © 2013, Dylan Knutson",
 	"authors": [
 		"Dylan Knutson"
-	],
-	"dependencies": {
-	}
+	]
 }

@@ -1,7 +1,7 @@
-d-router
+Director
 ========
 
-d-router is a fast routing library for D, modeled after the routing
+`director` is a fast routing library for D, modeled after the routing
 semantics of Sinatra and Ruby on Rails.
 
 `dub --build=unittest` to unittest
@@ -9,8 +9,8 @@ semantics of Sinatra and Ruby on Rails.
 Routing
 -------
 
-`Router`, from the `d_router.router` module, is the main type exposed
-by the d-router library. Pushing routes onto the router is done
+`Router`, from the `director.router` module, is the main type exposed
+by the director library. Pushing routes onto the router is done
 through the `Router#push(string, callback)` method, where `callback` can be one of four types:
 
  - `void function()`
@@ -39,7 +39,7 @@ method can be chained.
 Example:
 
 ```d
-import d_router.router;
+import director.router;
 
 void main()
 {

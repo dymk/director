@@ -1,4 +1,4 @@
-module d_router.router;
+module director.router;
 
 private import
 	std.stdio,
@@ -6,22 +6,53 @@ private import
 	std.regex,
 	std.string,
 	std.algorithm,
-	std.typetuple,
+	std.variant,
 	std.typetuple;
 
 private import
-	d_router.route,
-	d_router.regex_route,
-	d_router.splitter_route,
-	d_router.part,
-	d_router.params;
+	director.route,
+	director.regex_route,
+	director.splitter_route,
+	director.part,
+	director.params;
 
 private
 {
+}
+
+enum Method
+{
+	Get    = 1,
+	Post   = 2,
+	Put    = 4,
+	Delete = 8
+}
+
+// Thrown to skip a matching route
+private class PassException : Exception
+{
+	this(string msg) { super(msg); }
+}
+
+void pass()
+{
+	throw new PassException("pass");
+}
+
+struct Router
+{
+public:
 	alias CB_Delegate_Params = void delegate(Params);
 	alias CB_Function_Params = void function(Params);
 	alias CB_Delegate        = void delegate();
 	alias CB_Function        = void function();
+
+	alias CBTypes = TypeTuple!(
+		CB_Function,
+		CB_Function_Params,
+		CB_Delegate,
+		CB_Delegate_Params);
+private:
 
 	enum isCallback(T) =
 		is(T == CB_Function) || is(T == CB_Function_Params) ||
@@ -72,21 +103,26 @@ private
 				}
 			}
 		}
+
+		void invoke(ref Params params)
+		{
+			if(this.is_delegate)
+			{
+				if(this.takes_params)
+					this.dp_callback(params);
+				else
+					this.d_callback();
+			}
+			else
+			{
+				if(this.takes_params)
+					this.fp_callback(params);
+				else
+					this.f_callback();
+			}
+
+		}
 	}
-}
-
-enum Method
-{
-	Get    = 1,
-	Post   = 2,
-	Put    = 4,
-	Delete = 8
-}
-
-struct Router
-{
-private:
-	RouteCallbackPair[] routes;
 
 	Route routeFor(string route_pattern)
 	{
@@ -102,36 +138,36 @@ private:
 		q{
 			ref Router __ident(string pattern, CB_Function callback)
 			{
-				return define(__method, pattern, callback);
+				return define(pattern, __method, callback);
 			}
 			ref Router __ident(string pattern, CB_Function_Params callback)
 			{
-				return define(__method, pattern, callback);
+				return define(pattern, __method, callback);
 			}
 			ref Router __ident(string pattern, CB_Delegate callback)
 			{
-				return define(__method, pattern, callback);
+				return define(pattern, __method, callback);
 			}
 			ref Router __ident(string pattern, CB_Delegate_Params callback)
 			{
-				return define(__method, pattern, callback);
+				return define(pattern, __method, callback);
 			}
 
 			ref Router __ident(Route route, CB_Function callback)
 			{
-				return define(__method, route, callback);
+				return define(route, __method, callback);
 			}
 			ref Router __ident(Route route, CB_Function_Params callback)
 			{
-				return define(__method, route, callback);
+				return define(route, __method, callback);
 			}
 			ref Router __ident(Route route, CB_Delegate callback)
 			{
-				return define(__method, route, callback);
+				return define(route, __method, callback);
 			}
 			ref Router __ident(Route route, CB_Delegate_Params callback)
 			{
-				return define(__method, route, callback);
+				return define(route, __method, callback);
 			}
 		}
 		.replace("__ident", ident)
@@ -143,17 +179,18 @@ private:
 		enum SpecializedDefine =
 		q{
 			ref Router define(
-				Method method,
 				string route_pattern,
+				Method method,
 				%s callback)
 			{
-				return define(method, routeFor(route_pattern), callback);
+				return define(routeFor(route_pattern), method, callback);
 			}
 		}.format(cb_type);
 	}
+private:
+	RouteCallbackPair[] routes;
 
 public:
-
 	// DMD bugs mean mixin templates can't
 	// be used to generate this, so do this hackery to
 	// generate all the variants of get, post, put, and delete
@@ -173,8 +210,8 @@ public:
 	mixin(SpecializedDefine!"CB_Delegate_Params");
 
 	ref Router define(CBType)(
-		Method method,
 		Route route,
+		Method method,
 		CBType callback)
 	if(isCallback!CBType)
 	{
@@ -182,31 +219,34 @@ public:
 		return this;
 	}
 
-	bool match(string pattern, Method method)
+	bool match(E)(string pattern, Method method, E extra)
+	{
+		return match(pattern, method, Variant(extra));
+	}
+
+	bool match(string pattern, Method method, Variant extra = null)
 	{
 		string[string] matched_params;
+
 		foreach(ref pair; routes)
 		{
 			if(
 				(pair.method & method) != 0 &&
 				pair.route.matches(pattern, matched_params))
 			{
-				if(pair.is_delegate)
+				bool should_stop = true;
+				try
 				{
-					if(pair.takes_params)
-						pair.dp_callback(Params(matched_params));
-					else
-						pair.d_callback();
+					auto params = Params(matched_params, extra);
+					pair.invoke(params);
 				}
-				else
+				catch(PassException)
 				{
-					if(pair.takes_params)
-						pair.fp_callback(Params(matched_params));
-					else
-						pair.f_callback();
+					should_stop = false;
 				}
 
-				return true;
+				if(should_stop)
+					return true;
 			}
 		}
 
@@ -263,16 +303,32 @@ unittest
 
 	with(Method)
 	{
-		r.define(Get|Post, "/a", {});
+		r.define("/a", Get|Post, {});
 		assert(r.match("/a", Get));
 		assert(r.match("/a", Post));
 	}
 
 	with(Method)
 	{
-		r.define(Get, "/b", {});
+		r.define("/b", Get, {});
 		assert(r.match("/b", Get|Post));
 		assert(!r.match("/b", Post));
 	}
+}
 
+unittest
+{
+	auto r = Router();
+	int hit = 0;
+
+	r.define("/a", Method.Get, (params) {
+		hit = params.extra.get!int;
+	});
+
+	assert(hit == 0);
+	r.match("/a", Method.Get, 1);
+	assert(hit == 1);
+
+	r.match("/a", Method.Get, 423);
+	assert(hit == 423);
 }

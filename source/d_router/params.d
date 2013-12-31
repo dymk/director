@@ -1,4 +1,6 @@
-module d_router.params;
+module director.params;
+
+import std.variant;
 
 struct Params
 {
@@ -6,6 +8,15 @@ private:
 	string[string] params;
 
 public:
+	Variant extra;
+
+public:
+	this(string[string] params, Variant extra)
+	{
+		this(params);
+		this.extra = extra;
+	}
+
 	this(string[string] params)
 	{
 		this.params = params;

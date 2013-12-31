@@ -1,4 +1,4 @@
-module d_router.part;
+module director.part;
 
 import std.algorithm;
 
@@ -7,6 +7,7 @@ struct Part
 	string name;
 	bool parameter = false;
 	bool optional = false;
+	bool glob = true;
 
 	this(string part)
 	{
@@ -14,6 +15,12 @@ struct Part
 
 		if(name.length == 0)
 			return;
+
+		if(name == "*")
+		{
+			parameter = true;
+			glob = true;
+		}
 
 		if(name[0] == ':')
 		{

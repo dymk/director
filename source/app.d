@@ -1,7 +1,7 @@
 import
-		d_router.router,
-		d_router.splitter_route,
-		d_router.regex_route;
+		director.router,
+		director.splitter_route,
+		director.regex_route;
 
 import
 	std.stdio,
